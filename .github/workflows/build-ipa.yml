@@ -8,14 +8,17 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14   # جهاز ماك حقيقي توفره GitHub مجاناً (له حد شهري للحسابات المجانية)
+    runs-on: macos-15   # سيرفر ماك أحدث، فيه نسخ Xcode أحدث تدعم صيغة مشاريع XcodeGen الحديثة
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode version
-        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+      - name: Select latest available Xcode
+        run: |
+          ls /Applications/ | grep Xcode
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
 
       - name: Install XcodeGen (يولّد ملف مشروع Xcode تلقائياً - بدون فتح Xcode أبداً)
         run: brew install xcodegen
