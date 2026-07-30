@@ -21,13 +21,10 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate Xcode project from project.yml
-        run: |
-          cd CodeForge
-          xcodegen generate
+        run: xcodegen generate
 
       - name: Build for simulator (بدون توقيع - للتأكد أن الكود يترجم بنجاح)
         run: |
-          cd CodeForge
           xcodebuild -project CodeForge.xcodeproj \
             -scheme CodeForge \
             -sdk iphonesimulator \
@@ -43,7 +40,6 @@ jobs:
       - name: Archive & Export IPA (يتطلب إعداد التوقيع أولاً - راجع README)
         if: false   # عطّل هذي الخطوة حتى تجهز شهادات التوقيع، ثم احذف "if: false"
         run: |
-          cd CodeForge
           xcodebuild -project CodeForge.xcodeproj \
             -scheme CodeForge \
             -configuration Release \
@@ -53,11 +49,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $PWD/build/CodeForge.xcarchive \
             -exportPath $PWD/build \
-            -exportOptionsPlist ../ExportOptions.plist
+            -exportOptionsPlist ExportOptions.plist
 
       - name: Upload IPA as artifact
-        if: false   # فعّلها بعد تفعيل خطوة Archive أعلاه
-        uses: actions/upload-artifact@v4
-        with:
-          name: CodeForge-ipa
-          path: build/*.ipa
+        if: false   # فعّلها بع
