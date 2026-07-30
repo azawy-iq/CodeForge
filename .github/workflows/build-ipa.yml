@@ -26,21 +26,36 @@ jobs:
       - name: Generate Xcode project from project.yml
         run: xcodegen generate
 
-      - name: Build for simulator (بدون توقيع - للتأكد أن الكود يترجم بنجاح)
+      - name: Build unsigned for device (بدون توقيع - AltStore يوقّعه وقت التثبيت)
         run: |
           xcodebuild -project CodeForge.xcodeproj \
             -scheme CodeForge \
-            -sdk iphonesimulator \
-            -configuration Debug \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             build
 
-      # لتوليد ملف .ipa حقيقي قابل للتثبيت على جهاز فعلي، تحتاج:
-      # 1. شهادة توقيع (Signing Certificate) من حساب Apple Developer.
-      # 2. ملف Provisioning Profile مرتبط بجهازك (UDID) أو بحساب مطور.
-      # هذي الأسرار تُضاف في: Settings > Secrets and variables > Actions
-      # راجع ملف README.md في هذا المستودع لشرح الخطوات كاملة.
+      - name: Package .app into .ipa (بدون توقيع)
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/CodeForge.app Payload/
+          zip -r CodeForge-unsigned.ipa Payload
 
-      - name: Archive & Export IPA (يتطلب إعداد التوقيع أولاً - راجع README)
+      - name: Upload IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeForge-unsigned-ipa
+          path: CodeForge-unsigned.ipa
+
+      # --------------------------------------------------------------
+      # الخطوات التالية بديل احترافي (موقّع رسمياً) لو حصلت على حساب
+      # Apple Developer لاحقاً — معطّلة حالياً (if: false)
+      # --------------------------------------------------------------
+
+      - name: Archive & Export IPA (موقّع رسمياً - يتطلب حساب Apple Developer)
         if: false   # عطّل هذي الخطوة حتى تجهز شهادات التوقيع، ثم احذف "if: false"
         run: |
           xcodebuild -project CodeForge.xcodeproj \
@@ -53,10 +68,3 @@ jobs:
             -archivePath $PWD/build/CodeForge.xcarchive \
             -exportPath $PWD/build \
             -exportOptionsPlist ExportOptions.plist
-
-      - name: Upload IPA as artifact
-        if: false   # فعّلها بعد تفعيل خطوة Archive أعلاه
-        uses: actions/upload-artifact@v4
-        with:
-          name: CodeForge-ipa
-          path: build/*.ipa
