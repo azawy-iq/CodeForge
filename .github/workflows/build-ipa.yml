@@ -52,4 +52,8 @@ jobs:
             -exportOptionsPlist ExportOptions.plist
 
       - name: Upload IPA as artifact
-        if: false   # فعّلها بع
+        if: false   # فعّلها بعد تفعيل خطوة Archive أعلاه
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeForge-ipa
+          path: build/*.ipa
