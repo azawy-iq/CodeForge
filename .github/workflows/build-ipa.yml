@@ -1,0 +1,63 @@
+name: Build iOS App (.ipa)
+
+# يشتغل هذا تلقائياً عند رفع تحديث لفرع main، أو يدوياً من تبويب Actions
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14   # جهاز ماك حقيقي توفره GitHub مجاناً (له حد شهري للحسابات المجانية)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+
+      - name: Install XcodeGen (يولّد ملف مشروع Xcode تلقائياً - بدون فتح Xcode أبداً)
+        run: brew install xcodegen
+
+      - name: Generate Xcode project from project.yml
+        run: |
+          cd CodeForge
+          xcodegen generate
+
+      - name: Build for simulator (بدون توقيع - للتأكد أن الكود يترجم بنجاح)
+        run: |
+          cd CodeForge
+          xcodebuild -project CodeForge.xcodeproj \
+            -scheme CodeForge \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            build
+
+      # لتوليد ملف .ipa حقيقي قابل للتثبيت على جهاز فعلي، تحتاج:
+      # 1. شهادة توقيع (Signing Certificate) من حساب Apple Developer.
+      # 2. ملف Provisioning Profile مرتبط بجهازك (UDID) أو بحساب مطور.
+      # هذي الأسرار تُضاف في: Settings > Secrets and variables > Actions
+      # راجع ملف README.md في هذا المستودع لشرح الخطوات كاملة.
+
+      - name: Archive & Export IPA (يتطلب إعداد التوقيع أولاً - راجع README)
+        if: false   # عطّل هذي الخطوة حتى تجهز شهادات التوقيع، ثم احذف "if: false"
+        run: |
+          cd CodeForge
+          xcodebuild -project CodeForge.xcodeproj \
+            -scheme CodeForge \
+            -configuration Release \
+            -archivePath $PWD/build/CodeForge.xcarchive \
+            archive
+
+          xcodebuild -exportArchive \
+            -archivePath $PWD/build/CodeForge.xcarchive \
+            -exportPath $PWD/build \
+            -exportOptionsPlist ../ExportOptions.plist
+
+      - name: Upload IPA as artifact
+        if: false   # فعّلها بعد تفعيل خطوة Archive أعلاه
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeForge-ipa
+          path: build/*.ipa
